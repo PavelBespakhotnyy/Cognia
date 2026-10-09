@@ -1,1 +1,30 @@
 .env
+# LaTeX auxiliary files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.synctex(busy)
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ind
+*.ilg
+*.xdv
+
+# PDF: игнорировать все, кроме main.pdf
+*.pdf
+!main.pdf
+
+# MiKTeX
+*.fdblatexmk
