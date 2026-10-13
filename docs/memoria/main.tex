@@ -14,13 +14,169 @@
 
 \chapter{Introducción, problema y objetivos}
 
-\section{Problema}
-Texto de prueba.
+\section{Introducción}
 
-\section{Objetivos}
+Cognia es una plataforma tecnológica multiplataforma diseñada para
+transformar la gestión, la organización pedagógica y la comunicación en
+el sector de las clases particulares y las tutorías independientes. La
+solución unifica en un único ecosistema coordinado a los tres actores
+principales del proceso educativo: el profesor particular, el alumno y
+sus progenitores o tutores legales.
+
+El nombre del proyecto, Cognia, proviene del latín \textit{cognitio}
+(conocimiento, aprendizaje, conciencia). El eslogan elegido es
+\textit{«Clases estructuradas, progreso visible»}, que resume la
+propuesta de valor: ofrecer al profesor una herramienta profesional de
+gestión y al alumno y su familia una visibilidad clara del progreso
+académico.
+
+\section{Problema o necesidad detectada}
+
+En el modelo tradicional de clases particulares, el profesor autónomo
+gestiona de forma simultánea entre 10 y 25 alumnos. La ausencia de un
+software especializado obliga al docente a recurrir a herramientas
+genéricas e inconexas: hojas de cálculo aisladas (Excel o Google Sheets)
+para los calendarios, chats de WhatsApp para avisos y recepción de
+deberes, e impresos o notas en libreta para el control financiero.
+
+Esta fragmentación operativa genera tres problemas concretos:
+
 \begin{itemize}
-    \item Objetivo 1
-    \item Objetivo 2
+    \item \textbf{Para el profesor:} dedica entre 5 y 10 horas semanales
+    a tareas administrativas (cuadrar horarios, controlar cobros, enviar
+    tareas, redactar informes), tiempo que resta a la preparación de sus
+    contenidos didácticos.
+    \item \textbf{Para el alumno:} pierde el seguimiento de sus deberes
+    entre cientos de mensajes, no tiene visibilidad de sus entregas
+    pendientes ni de su evolución, y pierde la motivación.
+    \item \textbf{Para el padre o tutor legal:} sufre una opacidad total
+    sobre el rendimiento real de su hijo y se entera de los impagos o de
+    las deudas acumuladas con meses de retraso.
+\end{itemize}
+
+\subsection*{Situaciones reales de conflicto}
+
+\begin{itemize}
+    \item \textbf{Caso A (conflicto financiero):} el padre de un alumno
+    recibe una notificación verbal de impago acumulado de dos meses
+    (240~€) porque el profesor olvidó anotar tres sesiones dictadas
+    durante días festivos y no emitió un recordatorio formal a tiempo.
+    \item \textbf{Caso B (pérdida de material):} una estudiante de 3.º de
+    ESO no entrega su trabajo de preparación de examen porque el enlace
+    con la ficha PDF se perdió en un hilo de WhatsApp con más de 200
+    mensajes cruzados.
+    \item \textbf{Caso C (saturación administrativa):} un profesor
+    invierte la noche del domingo (más de 3 horas) redactando
+    manualmente 15 correos individuales a los padres para informar sobre
+    las notas del examen semanal.
+\end{itemize}
+
+\subsection*{Limitaciones de las soluciones actuales}
+
+Las herramientas existentes fallan al aplicarse al contexto del tutor
+privado independiente:
+
+\begin{itemize}
+    \item \textbf{Aplicaciones de mensajería (WhatsApp, Telegram):}
+    mezclan la vida personal con la profesional. La información académica
+    se diluye en hilos informales, los archivos adjuntos caducan y no
+    existe estructura de seguimiento.
+    \item \textbf{Hojas de cálculo (Excel, Sheets):} requieren
+    actualización manual constante, sufren errores humanos y no ofrecen
+    una interfaz interactiva ni notificaciones automáticas.
+    \item \textbf{Plataformas escolares institucionales (Google
+    Classroom, Moodle, Alexia):} están diseñadas para colegios e
+    institutos complejos. Son hipertrofiadas, requieren configuraciones
+    de dominio institucional y no contemplan la relación comercial ni los
+    cobros del tutor privado.
+\end{itemize}
+
+\section{Usuario o cliente objetivo}
+
+Cognia define tres perfiles de usuario perfectamente segregados en roles,
+competencias técnicas y necesidades operativas:
+
+\begin{itemize}
+    \item \textbf{Profesor particular (ROLE\_TUTOR):} autónomo que
+    gestiona entre 5 y 20 alumnos. Edad: 25--50 años. Nivel técnico:
+    básico--medio. Utiliza un panel web integral desde su ordenador
+    portátil al finalizar su jornada académica.
+    \item \textbf{Alumno (ROLE\_STUDENT):} estudiante de entre 10 y 18
+    años. Nivel técnico: alto (nativo digital). Utiliza una aplicación
+    móvil Android desde casa, en el centro educativo o en movimiento.
+    \item \textbf{Padre o tutor legal (ROLE\_PARENT):} adulto de entre 35
+    y 55 años. Nivel técnico: básico. Consulta el historial académico de
+    su hijo desde su dispositivo móvil o desde el correo electrónico.
+\end{itemize}
+
+\subsection*{User Personas representativas}
+
+\begin{itemize}
+    \item \textbf{Carlos Ruiz (profesor particular):} 34 años,
+    licenciado en Matemáticas, tutor privado de 18 alumnos de secundaria.
+    Necesita centralizar su agenda, reducir el tiempo dedicado a cobros y
+    enviar informes profesionales a los padres sin perder horas en
+    correos manuales.
+    \item \textbf{Lucía Gómez (alumna de 3.º de ESO):} 15 años,
+    estudiante que requiere refuerzo en Física y Química. Necesita ver
+    claramente sus deberes pendientes, descargar las fichas de ejercicios
+    en su móvil y sentirse motivada al ver su progreso.
+    \item \textbf{Roberto Gómez (padre de Lucía):} 48 años, ingeniero
+    industrial con jornada laboral intensa. Necesita tener visibilidad
+    del avance académico de su hija y recibir avisos claros sobre los
+    pagos mensuales sin tener que preguntar constantemente.
+\end{itemize}
+
+\section{Objetivos generales del proyecto}
+
+Los objetivos de Cognia se han formulado bajo la metodología SMART
+(específicos, medibles, alcanzables, relevantes y temporales),
+garantizando su verificación cuantitativa al finalizar el proyecto:
+
+\begin{enumerate}
+    \item \textbf{Optimizar el tiempo administrativo del profesor.}
+    Métrica: tiempo total por sesión (registro de clase, tarea e
+    informe). Criterio de éxito: inferior a 2 minutos, lo que supone una
+    reducción del 80\,\% respecto al método manual.
+
+    \item \textbf{Facilitar el acceso y la descarga de tareas en la
+    aplicación Android.} Métrica: pruebas de rendimiento con Android
+    Profiler. Criterio de éxito: visualización de tareas y descarga del
+    PDF en menos de 1,5 segundos.
+
+    \item \textbf{Automatizar las comunicaciones con las familias.}
+    Métrica: notificaciones y correos enviados. Criterio de éxito: el
+    100\,\% de los informes se envían en menos de 30 segundos tras el
+    registro de la clase.
+
+    \item \textbf{Garantizar la disponibilidad y el rendimiento de la
+    API REST.} Métrica: pruebas de carga con Postman. Criterio de éxito:
+    disponibilidad superior al 99\,\% y tiempo de respuesta inferior a
+    300~ms en el 95\,\% de las peticiones.
+
+    \item \textbf{Asegurar el funcionamiento sincronizado del sistema
+    en las plataformas web y móvil.} Métrica: pruebas de integración
+    cruzada. Criterio de éxito: los tres canales de acceso (web, Android
+    y correo electrónico) operan de forma sincronizada sin errores.
+\end{enumerate}
+
+\section{Justificación del proyecto}
+
+Cognia resuelve un problema real que afecta a las tres partes
+involucradas en el proceso educativo de las clases particulares. Frente a
+las alternativas existentes, el proyecto aporta las siguientes ventajas:
+
+\begin{itemize}
+    \item Centraliza en una única plataforma la gestión administrativa,
+    pedagógica y comunicativa del profesor autónomo.
+    \item Ofrece al alumno una experiencia móvil clara y motivadora,
+    con acceso directo a sus tareas, fechas límite y progreso.
+    \item Proporciona a las familias transparencia total sobre el
+    rendimiento académico y contable de sus hijos.
+    \item Se ajusta perfectamente al plazo de 13 \textit{sprints}
+    establecido para el proyecto intermodular del ciclo DAM2.
+    \item No requiere infraestructura en tiempo real ni APIs externas
+    complejas, lo que garantiza su viabilidad técnica y económica.
 \end{itemize}
 
 \end{document}
