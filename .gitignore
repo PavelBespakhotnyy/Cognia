@@ -1,30 +1,114 @@
+# ==========================================
+# OS / IDE / Editors
+# ==========================================
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Environment / secrets
+# ==========================================
 .env
-# LaTeX auxiliary files
-*.aux
-*.fdb_latexmk
-*.fls
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+!*.pub
+
+# ==========================================
+# Logs
+# ==========================================
 *.log
-*.out
-*.synctex.gz
-*.synctex(busy)
-*.toc
-*.lof
-*.lot
-*.bbl
-*.blg
-*.bcf
-*.run.xml
-*.nav
-*.snm
-*.vrb
-*.idx
-*.ind
-*.ilg
-*.xdv
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
 
-# PDF: игнорировать все, кроме main.pdf
-*.pdf
-!main.pdf
+# ==========================================
+# Backend — Java / Spring Boot / Gradle
+# ==========================================
+backend/.gradle/
+backend/build/
+backend/out/
+backend/bin/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/.factorypath
+backend/.apt_generated/
+backend/.sts4-cache/
 
-# MiKTeX
-*.fdblatexmk
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Gradle wrapper JAR — no ignore
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# ==========================================
+# Frontend — Node / Vite / Storybook
+# ==========================================
+frontend-web/node_modules/
+frontend-web/dist/
+frontend-web/dist-ssr/
+frontend-web/storybook-static/
+frontend-web/.vite/
+frontend-web/.cache/
+frontend-web/coverage/
+frontend-web/.eslintcache
+frontend-web/.prettiercache
+
+frontend-web/.env
+frontend-web/.env.*
+!frontend-web/.env.example
+
+# ==========================================
+# Mobile — Android / Gradle
+# ==========================================
+mobile-android/.gradle/
+mobile-android/build/
+mobile-android/app/build/
+mobile-android/captures/
+mobile-android/.externalNativeBuild/
+mobile-android/.cxx/
+mobile-android/local.properties
+mobile-android/.idea/
+mobile-android/*.iml
+
+*.apk
+*.aab
+*.ap_
+*.dex
+
+*.keystore
+*.jks
+keystore.properties
+signing.properties
+
+google-services.json
+
+# Gradle wrapper JAR — no ignore
+!mobile-android/gradle/wrapper/gradle-wrapper.jar
+
+# ==========================================
+# Docker
+# ==========================================
+infra/data/
+infra/volumes/

@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cognia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cognia
+      POSTGRES_USER: cognia
+      POSTGRES_PASSWORD: cognia_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - cognia_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cognia -d cognia"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cognia_pgdata:

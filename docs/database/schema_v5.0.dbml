@@ -1,0 +1,202 @@
+// ==========================================
+// COGNIA - Esquema de Base de Datos Final (v5.0)
+// ==========================================
+
+Table users [note: 'Tabla principal de autenticación.'] {
+  id uuid [primary key]
+  email varchar [unique, not null]
+  password_hash varchar [not null]
+  role varchar [note: 'TUTOR, STUDENT, PARENT']
+  created_at timestamp [default: `now()`]
+}
+
+Table tutors [note: 'Perfil del profesor particular.'] {
+  id uuid [primary key]
+  user_id uuid [unique, ref: > users.id]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  phone varchar
+  bio text [note: 'Breve descripción para el perfil']
+}
+
+Table parents [note: 'Perfil del padre/madre.'] {
+  id uuid [primary key]
+  user_id uuid [unique, ref: > users.id]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  phone varchar
+  preferred_payment_method varchar
+}
+
+Table students [note: 'Perfil del alumno.'] {
+  id uuid [primary key]
+  user_id uuid [unique, ref: > users.id]
+  tutor_id uuid [ref: > tutors.id]
+  parent_id uuid [ref: > parents.id]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  phone varchar [note: 'Teléfono de contacto del alumno']
+  grade_level varchar [note: 'Curso/Nivel, ej: 3º ESO']
+  school_name varchar [note: 'Centro educativo (colegio/instituto)']
+  notes text [note: 'Notas del profesor']
+}
+
+// --- CLASES Y MATERIALES ---
+
+Table lessons [note: 'Calendario de clases.'] {
+  id uuid [primary key]
+  tutor_id uuid [ref: > tutors.id]
+  student_id uuid [ref: > students.id]
+  start_time timestamp [not null]
+  end_time timestamp [not null]
+  subject varchar
+  price decimal(10,2)
+  status varchar [note: 'SCHEDULED, COMPLETED, CANCELLED']
+  is_available boolean [default: false, note: 'Indica si el horario estaba libre']
+  topic varchar
+  lesson_notes text
+}
+
+Table lesson_materials [note: 'Materiales (PDF, documentos) adjuntos a la clase.'] {
+  id uuid [primary key]
+  lesson_id uuid [ref: > lessons.id]
+  document_id uuid [ref: > documents.id]
+  type varchar [note: 'MATERIAL, HOMEWORK, EXAM']
+}
+
+// --- INDICADORES DEL ALUMNO ---
+
+Table attendance [note: 'Indicador: Asistencia.'] {
+  id uuid [primary key]
+  lesson_id uuid [ref: > lessons.id]
+  student_id uuid [ref: > students.id]
+  status varchar [note: 'PRESENT, ABSENT, LATE, JUSTIFIED']
+}
+
+Table assignments [note: 'Tareas académicas.'] {
+  id uuid [primary key]
+  lesson_id uuid [ref: > lessons.id]
+  student_id uuid [ref: > students.id]
+  title varchar
+  description text
+  pdf_file_path varchar
+  due_date timestamp
+  status varchar [note: 'PENDING, SUBMITTED, GRADED']
+}
+
+Table grades [note: 'Indicador: Calificaciones de tareas.'] {
+  id uuid [primary key]
+  assignment_id uuid [unique, ref: > assignments.id]
+  student_id uuid [ref: > students.id]
+  score decimal(4,2)
+  max_score decimal(4,2) [default: 10]
+  feedback text
+  graded_at timestamp
+}
+
+Table exams [note: 'Indicador: Exámenes.'] {
+  id uuid [primary key]
+  tutor_id uuid [ref: > tutors.id]
+  student_id uuid [ref: > students.id]
+  title varchar
+  exam_date timestamp
+  score decimal(4,2)
+  max_score decimal(4,2)
+}
+
+// --- FINANZAS Y ESTADÍSTICAS ---
+
+Table payments [note: 'Indicador: Finanzas.'] {
+  id uuid [primary key]
+  lesson_id uuid [ref: > lessons.id]
+  student_id uuid [ref: > students.id]
+  amount decimal(10,2)
+  payment_date timestamp
+  status varchar [note: 'PENDING, PAID']
+}
+
+Table statistics [note: 'Indicador: Estadísticas mensuales para el dashboard.'] {
+  id uuid [primary key]
+  tutor_id uuid [ref: > tutors.id]
+  month_year varchar [note: 'Ej: 2026-10']
+  total_lessons int
+  paid_lessons int
+  unpaid_lessons int
+  available_slots int
+  occupied_slots int
+  total_income decimal(10,2)
+  total_expenses decimal(10,2)
+  average_grade decimal(4,2)
+}
+
+// --- COMUNICACIÓN Y OTROS ---
+
+Table reports [note: 'Informes para los padres.'] {
+  id uuid [primary key]
+  lesson_id uuid [ref: > lessons.id]
+  student_id uuid [ref: > students.id]
+  parent_id uuid [ref: > parents.id]
+  report_text text
+  sent_at timestamp
+}
+
+Table rewards [note: 'Indicador: Gamificación.'] {
+  id uuid [primary key]
+  student_id uuid [ref: > students.id]
+  points int [default: 0]
+  badge_name varchar
+  unlocked_at timestamp
+}
+
+Table messages [note: 'Chat interno.'] {
+  id uuid [primary key]
+  sender_id uuid [ref: > users.id]
+  receiver_id uuid [ref: > users.id]
+  message_text text
+  created_at timestamp [default: `now()`]
+  is_read boolean [default: false]
+}
+
+Table documents [note: 'Biblioteca de archivos del profesor.'] {
+  id uuid [primary key]
+  owner_id uuid [ref: > tutors.id]
+  file_name varchar
+  file_url varchar
+  created_at timestamp [default: `now()`]
+}
+
+// ==========================================
+// --- FUTURAS EXTENSIONES (Roadmap) ---
+// ==========================================
+
+Table invoices [note: 'Futuro: Facturas generadas en PDF para los padres.'] {
+  id uuid [primary key]
+  parent_id uuid [ref: > parents.id]
+  student_id uuid [ref: > students.id]
+  amount decimal(10,2)
+  issue_date timestamp
+  due_date timestamp
+  pdf_url varchar
+  status varchar [note: 'DRAFT, SENT, PAID, OVERDUE']
+}
+
+Table goals [note: 'Futuro: Objetivos académicos del alumno (ej. "Aprobar el examen").'] {
+  id uuid [primary key]
+  student_id uuid [ref: > students.id]
+  title varchar
+  description text
+  target_date timestamp
+  status varchar [note: 'IN_PROGRESS, ACHIEVED, FAILED']
+}
+
+Table notifications [note: 'Futuro: Historial de notificaciones push y emails enviados.'] {
+  id uuid [primary key]
+  user_id uuid [ref: > users.id]
+  title varchar
+  body text
+  type varchar [note: 'PUSH, EMAIL']
+  is_read boolean [default: false]
+  sent_at timestamp [default: `now()`]
+}
+
+Ref: "notifications"."user_id" ?<>? "notifications"."type"

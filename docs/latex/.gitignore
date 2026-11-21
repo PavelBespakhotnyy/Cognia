@@ -1,0 +1,35 @@
+# .env
+.env
+
+# LaTeX auxiliary files
+*.aux
+*.fdb_latexmk
+*.fdblatexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ind
+*.ilg
+*.xdv
+
+# SyncTeX (все варианты)
+*.synctex
+*.synctex.gz
+*.synctex(busy)
+*.synctex.gz(busy)
+
+# PDF: игнорировать все, кроме main.pdf
+*.pdf
+!main.pdf
