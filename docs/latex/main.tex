@@ -1,7 +1,11 @@
 \documentclass[12pt,a4paper]{report}
+\usepackage{lmodern} 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[spanish]{babel}
+\usepackage{hyperref}
+\usepackage{microtype} 
+\usepackage{xurl}      
 
 \begin{document}
 
@@ -178,6 +182,7 @@ las alternativas existentes, el proyecto aporta las siguientes ventajas:
     \item No requiere infraestructura en tiempo real ni APIs externas
     complejas, lo que garantiza su viabilidad técnica y económica.
 \end{itemize}
+
 \chapter{Análisis de Requisitos y Control de Acceso}
 
 \section{Introducción al análisis funcional}
@@ -248,5 +253,195 @@ Durante la fase de planificación de requisitos, se han identificado los siguien
     \item \textbf{Sincronización de la base de datos:} Errores en las relaciones entre tablas (ej. alumnos sin padres asignados). \textit{Mitigación:} Diseñar el modelo Entidad-Relación en 3FN antes de escribir código en Spring Boot.
 \end{enumerate}
 
-\end{document}
+\chapter{Configuración técnica del proyecto y estructura del repositorio}
 
+\section{Introducción}
+
+Una vez definidos los requisitos funcionales y no funcionales en el capítulo anterior, el siguiente paso es establecer las bases técnicas sobre las que se construirá Cognia. Este capítulo documenta la configuración inicial del repositorio, la organización de carpetas, la instalación de las herramientas de desarrollo y la preparación de los entornos de trabajo tanto para el frontend web como para los futuros módulos de backend y móvil.
+
+El objetivo de esta fase no es implementar funcionalidad de negocio, sino garantizar que cualquier miembro del equipo pueda clonar el repositorio, instalar las dependencias y ejecutar el proyecto en su máquina local con un único comando. Se han seguido principios de \textit{monorepositorio}, separación de responsabilidades (\textit{separation of concerns}) y automatización de tareas repetitivas.
+
+\section{Estructura del repositorio}
+
+\subsection{Enfoque de monorepositorio}
+
+Se ha adoptado una estructura de \textit{monorepositorio}: un único repositorio de Git contiene todos los componentes del proyecto (documentación, backend, frontend web, aplicación Android y recursos compartidos). Esta decisión se justifica por:
+
+\begin{itemize}
+    \item \textbf{Visión unificada:} cualquier miembro del equipo accede a todo el código con un solo \texttt{git clone}.
+    \item \textbf{Versionado coherente:} los cambios en la API y en el cliente web se revisan en el mismo \textit{pull request}.
+    \item \textbf{Simplicidad de CI/CD:} una sola configuración de integración continua gestiona todos los módulos.
+\end{itemize}
+
+\subsection{Estructura de carpetas}
+
+La estructura final del repositorio es la siguiente:
+
+\begin{verbatim}
+cognia/
+|-- docs/               # Documentacion (BD, LaTeX, Figma, OpenAPI)
+|-- backend/            # Spring Boot (Java) - REST API
+|-- frontend-web/       # Vite + React + TypeScript
+|-- mobile-android/     # Android (Java + Retrofit)
+|-- shared/             # OpenAPI y design-tokens
+|-- infra/              # docker-compose, nginx, CI/CD
+|-- .gitignore
+`-- README.md
+\end{verbatim}
+
+Cada carpeta tiene una responsabilidad claramente definida:
+
+\begin{itemize}
+    \item \path{docs/}: documentación LaTeX, esquema DBML, especificación OpenAPI y exportaciones de Figma.
+    \item \path{backend/}: albergará el servidor Spring Boot con la API REST.
+    \item \path{frontend-web/}: contiene la aplicación web desarrollada con Vite, React y TypeScript, destinada exclusivamente al rol \texttt{TUTOR}.
+    \item \path{mobile-android/}: contendrá la aplicación Android unificada para alumnos y padres.
+    \item \path{shared/}: recursos compartidos entre módulos, como los contratos OpenAPI y los tokens de diseño (\textit{design tokens}) exportados desde Figma.
+    \item \path{infra/}: configuración de infraestructura: \path{docker-compose.yml}, configuración de Nginx y archivos de integración continua.
+\end{itemize}
+
+\subsection{Gestión de versiones y convenciones}
+
+Se ha configurado un archivo \path{.gitignore} en la raíz del repositorio que excluye de forma selectiva los artefactos generados por cada tecnología:
+
+\begin{itemize}
+    \item \textbf{Node.js / Vite:} \path{node_modules/}, \path{dist/}, \path{storybook-static/}, \path{.vite/}.
+    \item \textbf{Java / Gradle:} \path{build/}, \path{.gradle/}, \texttt{*.class}, \texttt{*.jar}.
+    \item \textbf{Android:} \path{local.properties}, \texttt{*.apk}, \texttt{*.aab}, \texttt{*.keystore}.
+    \item \textbf{Secretos:} \path{.env}, \path{.env.*} (excepto \path{.env.example}).
+    \item \textbf{LaTeX:} archivos auxiliares (\path{.aux}, \path{.log}, \path{.toc}, \path{.synctex.gz}).
+\end{itemize}
+
+Además, se ha añadido un archivo \path{docs/latex/.gitignore} específico para excluir los archivos temporales generados por la compilación de LaTeX, manteniendo únicamente el código fuente (\path{main.tex}) en el repositorio.
+
+\section{Preparación del frontend web}
+
+\subsection{Inicialización con Vite, React y TypeScript}
+
+La aplicación web se ha inicializado mediante Vite
+con la plantilla \texttt{react-ts}: 
+
+\begin{verbatim}
+npm create vite@latest . -- --template react-ts
+npm install
+\end{verbatim}
+
+Esta elección proporciona:
+
+\begin{itemize}
+    \item \textbf{React 18+}: biblioteca de interfaz de usuario basada en componentes.
+    \item \textbf{TypeScript}: tipado estático que reduce errores en tiempo de compilación.
+    \item \textbf{Vite}: servidor de desarrollo con recarga en caliente (\textit{HMR}) y empaquetado optimizado para producción.
+\end{itemize}
+
+El servidor de desarrollo se ejecuta en \url{http://localhost:5173} mediante el comando \texttt{npm run dev}.
+
+\subsection{Configuración de ESLint y Prettier}
+
+Para garantizar la calidad y consistencia del código se han configurado dos herramientas complementarias:
+
+\begin{itemize}
+    \item \textbf{ESLint} (\path{eslint.config.js}): análisis estático que
+    detecta errores de programación, malas prácticas y problemas de tipado.
+    Se ha utilizado
+    la configuración plana (\textit{flat config}) introducida en ESLint 9, con los
+    siguientes complementos: \path{@eslint/js}, \path{typescript-eslint},
+    \path{eslint-plugin-react-hooks} y \path{eslint-plugin-react-refresh}.
+    \item \textbf{Prettier} (\path{.prettierrc}): formateador de código que impone un estilo uniforme (comillas simples, punto y coma obligatorio, ancho máximo de 80 caracteres, indentación de 2 espacios).
+\end{itemize}
+
+Ambas herramientas se integran mediante \path{eslint-config-prettier}, que desactiva las reglas de ESLint que entrarían en conflicto con el formato de Prettier. Los comandos disponibles son:
+
+\begin{verbatim}
+npm run lint      # Ejecuta ESLint
+npm run format    # Aplica Prettier
+\end{verbatim}
+
+\subsection{Instalación y configuración de Storybook}
+
+Storybook se ha instalado con el comando:
+
+\begin{verbatim}
+npx storybook@latest init
+\end{verbatim}
+
+Storybook proporciona un entorno aislado para desarrollar y documentar componentes de interfaz de usuario. Se ha integrado el \texttt{addon-designs}, que permite vincular cada historia (\textit{story}) con su correspondiente diseño en Figma:
+
+\begin{verbatim}
+npx storybook@latest add @storybook/addon-designs
+\end{verbatim}
+
+La organización adoptada separa estrictamente los componentes de sus historias:
+
+\begin{itemize}
+    \item \path{src/components/}: componentes reutilizables, sin archivos \texttt{.stories}.
+    \item \path{src/pages/}: pantallas completas de la aplicación.
+    \item \path{src/stories/}: todas las historias de Storybook, que importan los componentes desde \path{src/components/}.
+\end{itemize}
+
+Esta separación evita que los archivos de documentación visual se mezclen con el código de producción. El servidor de Storybook se ejecuta en \url{http://localhost:6006} mediante el comando \texttt{npm run storybook}.
+
+\section{Preparación de la infraestructura local}
+
+\subsection{Contenedor de PostgreSQL con Docker Compose}
+
+Para garantizar que todos los miembros del equipo dispongan de una base de datos idéntica sin necesidad de instalar PostgreSQL manualmente en el sistema operativo, se ha creado el archivo \path{infra/docker-compose.yml}. Este archivo define un único servicio:
+
+\begin{verbatim}
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cognia-postgres
+    environment:
+      POSTGRES_DB: cognia
+      POSTGRES_USER: cognia
+      POSTGRES_PASSWORD: cognia_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - cognia_pgdata:/var/lib/postgresql/data
+\end{verbatim}
+
+La base de datos se inicia con el comando \texttt{docker compose up -d} y se detiene con \texttt{docker compose down}. El volumen \path{cognia_pgdata} garantiza la persistencia de los datos entre reinicios.
+
+Es importante destacar que este contenedor únicamente proporciona un servidor PostgreSQL vacío: la estructura de tablas se creará automáticamente mediante las migraciones de Flyway incluidas en el backend (\path{backend/src/main/resources/db/migration/}).
+
+\subsection{Documentación de la infraestructura}
+
+Se ha creado el archivo \path{infra/README.md} en inglés que documenta:
+
+\begin{itemize}
+    \item El propósito de la carpeta \path{infra/}.
+    \item Las credenciales de desarrollo (exclusivamente locales).
+    \item Los comandos de Docker Compose (iniciar, detener, ver logs, abrir \texttt{psql}).
+    \item La hoja de ruta para futuras incorporaciones (servicios \texttt{backend} y \texttt{nginx}).
+\end{itemize}
+
+\section{Documentación de la base de datos}
+
+Se ha creado el archivo \path{docs/database/README.md} que documenta el esquema relacional de Cognia. Incluye:
+
+\begin{itemize}
+    \item Agrupación de las tablas en seis bloques funcionales: identidad, clases, indicadores del alumno, finanzas, comunicación y extensiones futuras.
+    \item Descripción de las relaciones entre tablas (claves foráneas, cardinalidades).
+    \item Convenciones del proyecto (UUID como clave primaria, \texttt{decimal} para importes monetarios, estados almacenados como \texttt{varchar}).
+    \item Procedimiento para convertir el diseño DBML en migraciones Flyway.
+\end{itemize}
+
+Este documento complementa al archivo \path{schema_v5.0.dbml}, que constituye la fuente de verdad del modelo de datos.
+
+\section{Resultados de la fase de configuración}
+
+Al finalizar esta fase, el repositorio contiene:
+
+\begin{itemize}
+    \item Una estructura de carpetas escalable y documentada.
+    \item Un frontend web funcional con React, TypeScript, ESLint, Prettier y Storybook.
+    \item Una base de datos PostgreSQL reproducible localmente mediante Docker Compose.
+    \item Un archivo \path{.gitignore} que protege al repositorio de artefactos y secretos.
+    \item Documentación técnica completa en \path{infra/README.md} y \path{docs/database/README.md}.
+\end{itemize}
+
+Todos los cambios han sido versionados en la rama \texttt{main} mediante commits atómicos y descriptivos. El repositorio está preparado para que el siguiente \textit{sprint} se centre en el diseño en Figma de la interfaz (UI Kit y pantallas de autenticación) y en la implementación de las primeras pantallas del frontend.
+
+\end{document}
