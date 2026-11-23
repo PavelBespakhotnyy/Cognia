@@ -195,8 +195,9 @@ Para garantizar la privacidad de los datos (especialmente los de menores de edad
 
 \begin{itemize}
     \item \textbf{Roles del sistema:} La plataforma define tres roles principales: \texttt{TUTOR}, \texttt{STUDENT} y \texttt{PARENT}.
-    \item \textbf{El profesor como administrador:} El profesor particular es el único usuario con privilegios para registrar nuevos alumnos y vincularlos a sus respectivos padres. No existe el registro público.
-    \item \textbf{Sin registro libre en la App Móvil:} Las aplicaciones Android (para alumnos y padres) no dispondrán de un formulario de registro. El profesor será quien cree las cuentas y entregue las credenciales de acceso.
+    \item \textbf{El profesor como administrador:} El profesor particular es el único usuario con privilegios para registrar nuevos alumnos. No crea cuentas de padres; la vinculación entre alumnos y padres se definirá junto al flujo de registro del padre.
+    \item \textbf{Registro del padre:} El padre o tutor legal se registra por sí mismo en la aplicación Android. El profesor no puede crear cuentas con el rol \texttt{PARENT}. El mecanismo concreto de vinculación con el alumno (código de invitación, enlace por correo u otro) queda pendiente de definir antes de implementar la API.
+    \item \textbf{Sin registro libre para alumnos:} Los alumnos no se registran por sí mismos: el profesor crea sus cuentas y entrega las credenciales de acceso.
     \item \textbf{Redirección automática basada en el Backend:} Tras el inicio de sesión, el backend (Spring Boot) validará el token JWT y determinará el rol del usuario. El sistema lo redirigirá automáticamente a su interfaz correspondiente (Web para el profesor, Android para el alumno o el padre), imposibilitando el acceso cruzado a datos que no le corresponden.
 \end{itemize}
 
@@ -223,6 +224,7 @@ Los requisitos funcionales describen las acciones que el sistema debe permitir. 
     \item \textbf{RF-11 (Should have - Padre):} Consulta del historial de clases impartidas a su hijo y acceso a los informes del profesor.
     \item \textbf{RF-12 (Could have - Padre):} Recepción de notificaciones push sobre la publicación de nuevas notas o avisos de pago.
     \item \textbf{RF-13 (Could have - Alumno):} Sistema de gamificación (acumulación de puntos por tareas entregadas a tiempo).
+    \item \textbf{RF-14 (Must have - Padre):} Registro propio del padre o tutor legal en la aplicación Android, sin intervención del profesor.
 \end{itemize}
 
 \section{Requisitos No Funcionales}
