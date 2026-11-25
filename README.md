@@ -10,6 +10,21 @@ Our team is very small, just 2 people!
 ### Goal
 This project is aimed to be a learning oportunity and not a commercial product.
 
+## Current implementation status (2026-11-24)
+
+The backend is being built in small vertical slices. Frontend work is out of scope for the current steps.
+
+- Database: Flyway migrations V1 through V3 are applied in the local `cognia` database.
+  8 of 23 designed tables exist.
+- Backend: auth, invitations, student list, and lesson endpoints are implemented.
+  14 of 23 endpoints in `api-contract-preview.json` are marked `IMPLEMENTED`.
+- Verification: manual curl and PostgreSQL checks pass. There is no automated test suite yet.
+- Local run commands and explanations: `instructions.md`.
+- Source of truth: `info.md` keeps the verified state and decisions.
+  `info_tech.md` explains the same parts in plain language.
+
+Next slice: `V4__lesson_materials.sql` with document and lesson material endpoints.
+
 cognia/
 │
 ├── docs/                              # Documents

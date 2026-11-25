@@ -1,179 +1,214 @@
-# Cognia — Database Schema
+# Cognia Database Schema
 
-This folder contains the database schema for the Cognia platform, designed for **PostgreSQL 16** and managed with **Flyway migrations** in `backend/src/main/resources/db/migration/`.
+This folder contains the database design for the Cognia platform, designed for PostgreSQL 16 and
+managed with Flyway migrations in `backend/src/main/resources/db/migration/`.
 
----
+The current design source is `schema_v5.1.dbml`. Version 5.0 is kept for history only. Do not edit
+either version in place. Create `schema_v5.2.dbml` for the next schema change.
 
-##  Contents
+## Contents
 
 | File | Purpose |
 |------|---------|
-| `schema_v5.0.dbml` | Source schema in [DBML](https://dbml.dbdiagram.io/) format (edit here) |
-| `schema_v5.0.png`  | Exported diagram for documentation and presentations |
-| `README.md`        | This file — overview, conventions, and relationships |
+| `schema_v5.0.dbml` | Previous design, kept for history |
+| `schema_v5.1.dbml` | Current source schema, valid DBML for dbdiagram.io |
+| `README.md` | This file: overview, conventions, and migration order |
 
----
+`schema_v5.1.png` should be exported from dbdiagram.io when the diagram is reviewed.
 
-##  Domain overview
+## Domain overview
 
-Cognia is a tutoring management platform with **three user roles**:
+Cognia is a tutoring management platform with three user roles:
 
 | Role | Platform | Description |
 |------|----------|-------------|
-| `TUTOR`   | Web (React)    | Private teacher. Self-registers on the web. |
+| `TUTOR` | Web (React) | Private teacher. Self-registers on the web. |
 | `STUDENT` | Mobile (Android) | Pupil. Self-registers in the Android app. |
-| `PARENT`  | Mobile (Android) | Parent or guardian. Self-registers in the Android app. |
+| `PARENT` | Mobile (Android) | Parent or guardian. Self-registers in the Android app. |
 
-The **web application is tutor-only**. Students and parents use a single Android app where the backend determines the role from the account, not the user. All three roles create their own accounts. Tutors do not create `STUDENT` or `PARENT` accounts. The exact mechanism that links a student to a tutor and to a parent (invitation code, email link, etc.) is still to be defined before the API is implemented.
+The web application is tutor-only. Students and parents use one Android app, and the backend
+determines the role from the account. Tutors do not create student or parent accounts.
 
----
+Self-registration is now modeled. A tutor or a parent sends an email invitation. The invite does
+not create an account. The student registers independently and accepts the token. Only then are
+`students.tutor_id` and `students.parent_id` set.
 
-##  Table groups
+## Table groups
 
-### 1. Identity & profiles
+There are 23 tables in v5.1.
 
-| Table | Purpose |
-|-------|---------|
-| `users`    | Base authentication table (email, password hash, role) |
-| `tutors`   | Tutor profile (1:1 with `users`) |
-| `parents`  | Parent profile (1:1 with `users`) |
-| `students` | Student profile (1:1 with `users`, linked to tutor and parent) |
-
-**Key relationships:**
-- `tutors.user_id` → `users.id` (unique)
-- `parents.user_id` → `users.id` (unique)
-- `students.user_id` → `users.id` (unique)
-- `students.tutor_id` → `tutors.id`
-- `students.parent_id` → `parents.id`
-
-### 2. Lessons & materials
+### 1. Identity and invitations
 
 | Table | Purpose |
 |-------|---------|
-| `lessons`           | Lesson calendar (time, subject, price, status) |
-| `lesson_materials`  | Attachments (PDF, docs) linked to a lesson and to the document library |
+| `users` | Base authentication table with email, password hash, role, and creation time |
+| `tutors` | Tutor profile, one row per `TUTOR` account |
+| `parents` | Parent profile, one row per `PARENT` account |
+| `students` | Student profile, linked to a tutor and a parent only after invitation acceptance |
+| `tutor_invitations` | Email invitation from a tutor to a student |
+| `parent_invitations` | Email invitation from a parent to a student |
 
-**Key relationships:**
-- `lessons.tutor_id` → `tutors.id`
-- `lessons.student_id` → `students.id`
-- `lesson_materials.lesson_id` → `lessons.id`
-- `lesson_materials.document_id` → `documents.id`
+Key constraints:
+
+- `users.role` is limited to `TUTOR`, `STUDENT`, and `PARENT`.
+- `users.email` uses `citext`, so uniqueness is case-insensitive.
+- Profile `user_id` values are unique and reference `users.id`.
+- Invitation `token_hash` values are unique.
+
+### 2. Lessons and files
+
+| Table | Purpose |
+|-------|---------|
+| `documents` | Tutor file library, created in V1 |
+| `lessons` | Lesson calendar with time, subject, price, status, topic, and notes |
+| `lesson_materials` | Attachments linking a lesson to one document |
+
+Key constraints:
+
+- `end_time > start_time`.
+- One document can be attached to a lesson only once.
+- A tutor cannot have two lessons with the same `start_time`.
+- `is_available` is not stored. A free slot is a lesson with `student_id is null`.
 
 ### 3. Student indicators
 
 | Table | Purpose |
 |-------|---------|
-| `attendance`  | Attendance per lesson (PRESENT / ABSENT / LATE / JUSTIFIED) |
-| `assignments` | Homework (title, description, PDF, due date, status) |
-| `grades`      | Grades for assignments (1:1 with `assignments`) |
-| `exams`       | Exam results |
+| `attendance` | One attendance value per student per lesson |
+| `assignments` | Homework for one student in one lesson |
+| `grades` | One grade per assignment |
+| `exams` | Exam results recorded by a tutor |
 
-**Key relationships:**
-- `attendance.lesson_id` → `lessons.id`
-- `attendance.student_id` → `students.id`
-- `assignments.lesson_id` → `lessons.id`
-- `assignments.student_id` → `students.id`
-- `grades.assignment_id` → `assignments.id` (unique — one grade per assignment)
-- `exams.tutor_id` → `tutors.id`
-- `exams.student_id` → `students.id`
+Key constraints:
 
-### 4. Finance & statistics
+- `attendance(lesson_id, student_id)` is unique.
+- `assignments(lesson_id, student_id, title)` is unique.
+- `grades.assignment_id` is unique.
+- `score <= max_score` for grades and exams.
+
+### 4. Finance and statistics
 
 | Table | Purpose |
 |-------|---------|
-| `payments`   | Payment per lesson (amount, status PENDING / PAID) |
-| `statistics` | Precomputed monthly statistics for the dashboard |
+| `payments` | At most one payment per lesson |
+| `statistics` | Prepared monthly numbers for the tutor dashboard |
 
-**Key relationships:**
-- `payments.lesson_id` → `lessons.id`
-- `payments.student_id` → `students.id`
-- `statistics.tutor_id` → `tutors.id`
+Key constraints:
 
-### 5. Communication & extras
+- `payments.lesson_id` is unique.
+- `payments(student_id)` must match the student of the referenced lesson through a composite FK.
+- `statistics(tutor_id, month_year)` is unique.
+- `month_year` is a `date` fixed to the first day of the month.
+- `total_expenses` was removed because no expense source table exists. Recalculate statistics on a
+  schedule or expose them through a view.
 
-| Table | Purpose |
-|-------|---------|
-| `reports`   | Lesson reports sent to parents |
-| `rewards`   | Gamification (points, badges) |
-| `messages`  | Internal chat between users |
-| `documents` | Tutor's file library |
-
-**Key relationships:**
-- `reports.lesson_id` → `lessons.id`
-- `reports.student_id` → `students.id`
-- `reports.parent_id` → `parents.id`
-- `rewards.student_id` → `students.id`
-- `messages.sender_id` → `users.id`
-- `messages.receiver_id` → `users.id`
-- `documents.owner_id` → `tutors.id`
-
-### 6. Future extensions (roadmap)
-
-These tables are defined but **not used in the MVP**. They are reserved for future features.
+### 5. Communication
 
 | Table | Purpose |
 |-------|---------|
-| `invoices`      | PDF invoices for parents |
-| `goals`         | Academic goals for students |
-| `notifications` | Push / email notification history |
+| `reports` | Report text sent to a parent after a lesson |
+| `messages` | Internal chat between two users |
 
----
+Key constraints:
 
-##  Conventions
+- `reports(lesson_id, parent_id)` is unique.
+- Composite FKs keep the report student consistent with the lesson and with the parent.
+- `messages.sender_id` must be different from `messages.receiver_id`.
 
-- **Primary keys:** `uuid` everywhere (generated by the application, not the database).
-- **Timestamps:** `timestamp` columns (`created_at`, `sent_at`, etc.). Defaults to `now()` where appropriate.
-- **Money:** `decimal(10,2)` — never `float`.
-- **Scores:** `decimal(4,2)` with `max_score` default `10`.
-- **Status fields:** stored as `varchar`, values documented in the DBML comments.
-- **Foreign keys:** `ref: > table.id` in DBML — becomes a real FK constraint in PostgreSQL.
+### 6. Gamification
 
----
+| Table | Purpose |
+|-------|---------|
+| `student_points` | One point total per student |
+| `badges` | Badge catalog |
+| `student_badges` | Award history, one award of a badge per student |
 
-##  How to work with the schema
+The old `rewards` table was split. Storing points and badge rows in one table duplicated the point
+total for students with more than one badge.
+
+### 7. Roadmap
+
+| Table | Purpose |
+|-------|---------|
+| `invoices` | Future PDF invoices for parents |
+| `goals` | Future academic goals |
+| `notifications` | Future push and email history |
+
+The invalid relation between `notifications.user_id` and `notifications.type` was removed. `type`
+is a checked varchar value, not a foreign key.
+
+## Conventions
+
+- Primary keys are `uuid` values generated by the application. The database does not generate them.
+- Timestamps use `timestamptz`. Dates such as `month_year`, invoice dates, and goal targets use
+  `date`.
+- Email fields use `citext`. V1 must include `CREATE EXTENSION IF NOT EXISTS citext;`.
+- Money uses `decimal(10,2)`. Scores use `decimal(4,2)`. Never use float.
+- Status values are enforced by DBML `check` expressions. These must be carried into the SQL
+  migrations.
+- Composite unique rules are written as `indexes` blocks with `[unique]`.
+- Foreign key actions are written on `Ref:` lines with `delete:` and `update:` settings. History
+  tables mostly use `restrict`. Child rows of a deleted parent use `cascade` only when the child has
+  no independent history.
+- Never create or change tables by hand in psql, DBeaver, or pgAdmin. Add a new migration file.
+- Never edit a migration that Flyway already applied. Flyway stores checksums and will fail.
+
+## How to work with the schema
 
 ### Edit the schema
 
-1. Open `schema_v5.0.dbml` in [dbdiagram.io](https://dbdiagram.io/) or any DBML-compatible editor.
-2. Make changes.
-3. Export the updated diagram as `schema_v5.1.png` (bump the version).
-4. Save the updated DBML as `schema_v5.1.dbml`.
-5. **Do not** delete older versions — they document the evolution of the schema.
+1. Copy `schema_v5.1.dbml` to `schema_v5.2.dbml`.
+2. Edit the new file with dbdiagram.io or any DBML-compatible editor.
+3. Export the updated diagram as `schema_v5.2.png`.
+4. Keep all older versions. They document the evolution of the schema.
+
+### Validate the DBML
+
+The v5.1 file was validated with the DBML CLI:
+
+```bash
+npx --yes -p @dbml/cli dbml2sql --postgres docs/database/schema_v5.1.dbml -o /tmp/schema_v5.1.sql
+```
+
+A successful command prints `Generated SQL dump file`. The generated SQL was also executed in a
+temporary PostgreSQL database with `citext` installed. The live `cognia` database was not touched.
 
 ### Generate a diagram
 
-1. Go to [dbdiagram.io](https://dbdiagram.io/).
-2. Paste the contents of `schema_v5.0.dbml`.
-3. Click **Export → PNG**.
-4. Save as `docs/database/schema_v5.0.png`.
+1. Go to dbdiagram.io.
+2. Paste the contents of `docs/database/schema_v5.1.dbml`.
+3. Click Export, then PNG.
+4. Save as `docs/database/schema_v5.1.png`.
 
 ### Turn the schema into Flyway migrations
 
-The DBML is **not** executed directly. It is a design document. Real SQL migrations live in:
+DBML is a design document and is not executed directly. Real SQL migrations live in
+`backend/src/main/resources/db/migration/`.
 
-```
-backend/src/main/resources/db/migration/
-├── V1__init_users.sql
-├── V2__tutors_and_parents.sql
-├── V3__students.sql
-├── V4__lessons.sql
-├── V5__attendance.sql
-├── V6__assignments_and_grades.sql
-├── V7__exams.sql
-├── V8__payments_and_statistics.sql
-├── V9__reports_and_rewards.sql
-├── V10__messages_and_documents.sql
-└── V11__future_extensions.sql
-```
+| Migration | Tables | Status |
+|-----------|--------|--------|
+| V1 | `users`, `tutors`, `parents`, `documents`, plus the `citext` extension | Applied |
+| V2 | `students`, `tutor_invitations`, `parent_invitations` | Applied |
+| V3 | `lessons` | Applied |
+| V4 | `lesson_materials` | Planned |
+| V5 | `attendance` | Planned |
+| V6 | `assignments`, `grades` | Planned |
+| V7 | `exams` | Planned |
+| V8 | `payments`, `statistics` | Planned |
+| V9 | `reports`, `student_points`, `badges`, `student_badges` | Planned |
+| V10 | `messages` | Planned |
+| V11 | `invoices`, `goals`, `notifications` | Planned |
 
-Each `V*.sql` file is written by hand (or generated from DBML) and applied automatically by Flyway when the backend starts.
+Each `V*.sql` file is written by hand or generated from DBML and then reviewed. Flyway applies
+them automatically when the backend starts.
 
->  **Do not create tables manually** in DBeaver / pgAdmin / psql. Flyway is the single source of truth for the database structure.
+Current status on 2026-11-24: V1, V2 and V3 are applied in the local `cognia` database. V4 through
+V11 are still planned. See `info.md` for verified details and `info_tech.md` for plain explanations.
 
----
+## Related documents
 
-##  Related documents
-
-- `docs/api/openapi.yaml` — REST API contract (must stay consistent with the schema).
-- `backend/src/main/resources/db/migration/` — actual SQL migrations.
-- `infra/docker-compose.yml` — local PostgreSQL instance.
+- `instructions.md`: local run commands and what each command does
+- `info.md`: current verified state and decisions
+- `info_tech.md`: plain-language explanations
+- `backend/src/main/resources/db/migration/`: actual SQL migrations, V1 through V3 applied locally
+- `infra/docker-compose.yml`: local PostgreSQL instance

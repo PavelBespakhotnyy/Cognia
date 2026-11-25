@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cognia
+    username: cognia
+    password: cognia_dev_password
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:tuj1xDZJg8EAWjmSrMf4jfsa/nnMQ/YaZICrnrK88k4idF2ST+8Vb4filBUYteoj}
+    expiration-ms: 3600000

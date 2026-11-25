@@ -1,0 +1,404 @@
+// ==========================================
+// COGNIA - Database schema v5.1
+// ==========================================
+// This file replaces schema_v5.0.dbml as the design source for the next Flyway
+// migrations. The old file is kept only for history. The syntax is valid for
+// dbdiagram.io and for the dbml2sql CLI.
+
+Project cognia {
+  database_type: 'PostgreSQL'
+  Note: 'Cognia tutoring platform. All primary keys are application-generated UUIDs.'
+}
+
+// ------------------------------------------
+// Identity and profiles
+// ------------------------------------------
+
+Table users [
+  note: 'Base authentication table. citext requires CREATE EXTENSION citext in V1 so email uniqueness is case-insensitive.'
+] {
+  id uuid [pk, not null]
+  email citext [not null, unique]
+  password_hash varchar(255) [not null]
+  role varchar(10) [not null, check: `role in ('TUTOR','STUDENT','PARENT')`]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table tutors [note: 'Tutor profile. One row per TUTOR account.'] {
+  id uuid [pk, not null]
+  user_id uuid [not null, unique]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  phone varchar(30)
+  bio text
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table parents [note: 'Parent profile. One row per PARENT account.'] {
+  id uuid [pk, not null]
+  user_id uuid [not null, unique]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  phone varchar(30)
+  preferred_payment_method varchar(30)
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table students [
+  note: 'Student profile. tutor_id and parent_id stay null until an invitation is accepted. All three roles self-register.'
+] {
+  id uuid [pk, not null]
+  user_id uuid [not null, unique]
+  tutor_id uuid
+  parent_id uuid
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  phone varchar(30)
+  grade_level varchar(50)
+  school_name varchar(150)
+  notes text
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (id, tutor_id) [unique, name: 'uq_students_id_tutor']
+    (id, parent_id) [unique, name: 'uq_students_id_parent']
+  }
+}
+
+Table tutor_invitations [
+  note: 'A tutor invites a student by email. The invite does not create an account. The student self-registers and accepts the token.'
+] {
+  id uuid [pk, not null]
+  tutor_id uuid [not null]
+  email citext [not null]
+  token_hash varchar(255) [not null, unique]
+  status varchar(10) [not null, default: 'PENDING', check: `status in ('PENDING','ACCEPTED','EXPIRED','REVOKED')`]
+  expires_at timestamptz [not null]
+  accepted_at timestamptz
+  accepted_by_student_id uuid
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (tutor_id, email, status) [name: 'idx_tutor_invitations_lookup']
+  }
+}
+
+Table parent_invitations [
+  note: 'A parent invites a student by email. The invite does not create an account. The student self-registers and accepts the token.'
+] {
+  id uuid [pk, not null]
+  parent_id uuid [not null]
+  email citext [not null]
+  token_hash varchar(255) [not null, unique]
+  status varchar(10) [not null, default: 'PENDING', check: `status in ('PENDING','ACCEPTED','EXPIRED','REVOKED')`]
+  expires_at timestamptz [not null]
+  accepted_at timestamptz
+  accepted_by_student_id uuid
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (parent_id, email, status) [name: 'idx_parent_invitations_lookup']
+  }
+}
+
+// ------------------------------------------
+// Lessons and materials
+// ------------------------------------------
+
+Table documents [note: 'Tutor file library. Created in V1 because lesson_materials references it.'] {
+  id uuid [pk, not null]
+  owner_id uuid [not null]
+  file_name varchar(255) [not null]
+  file_url varchar(500) [not null]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table lessons [
+  note: 'A free slot is a lesson with student_id = null. is_available is not stored because it can be derived from student_id.'
+] {
+  id uuid [pk, not null]
+  tutor_id uuid [not null]
+  student_id uuid
+  start_time timestamptz [not null]
+  end_time timestamptz [not null]
+  subject varchar(100)
+  price decimal(10,2) [not null, check: `price >= 0`]
+  status varchar(12) [not null, default: 'SCHEDULED', check: `status in ('SCHEDULED','COMPLETED','CANCELLED')`]
+  topic varchar(200)
+  lesson_notes text
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (id, student_id) [unique, name: 'uq_lessons_id_student']
+    (tutor_id, start_time) [unique, name: 'uq_lessons_tutor_start']
+  }
+
+  checks {
+    `end_time > start_time` [name: 'chk_lessons_time_order']
+  }
+}
+
+Table lesson_materials [note: 'One document can be attached to a lesson only once.'] {
+  id uuid [pk, not null]
+  lesson_id uuid [not null]
+  document_id uuid [not null]
+  type varchar(10) [not null, check: `type in ('MATERIAL','HOMEWORK','EXAM')`]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (lesson_id, document_id) [unique, name: 'uq_lesson_materials_lesson_document']
+  }
+}
+
+// ------------------------------------------
+// Student indicators
+// ------------------------------------------
+
+Table attendance [note: 'Exactly one attendance row per student per lesson.'] {
+  id uuid [pk, not null]
+  lesson_id uuid [not null]
+  student_id uuid [not null]
+  status varchar(12) [not null, check: `status in ('PRESENT','ABSENT','LATE','JUSTIFIED')`]
+  marked_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (lesson_id, student_id) [unique, name: 'uq_attendance_lesson_student']
+  }
+}
+
+Table assignments [note: 'Homework for one student in one lesson.'] {
+  id uuid [pk, not null]
+  lesson_id uuid [not null]
+  student_id uuid [not null]
+  title varchar(200) [not null]
+  description text
+  pdf_file_path varchar(500)
+  due_date timestamptz
+  status varchar(10) [not null, default: 'PENDING', check: `status in ('PENDING','SUBMITTED','GRADED')`]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (lesson_id, student_id, title) [unique, name: 'uq_assignments_lesson_student_title']
+  }
+}
+
+Table grades [note: 'One grade per assignment. The student is reached through the assignment.'] {
+  id uuid [pk, not null]
+  assignment_id uuid [not null, unique]
+  score decimal(4,2) [not null, check: `score >= 0`]
+  max_score decimal(4,2) [not null, default: 10, check: `max_score > 0`]
+  feedback text
+  graded_at timestamptz [not null, default: `now()`]
+
+  checks {
+    `score <= max_score` [name: 'chk_grades_score_range']
+  }
+}
+
+Table exams [note: 'Exam result recorded by a tutor for a student.'] {
+  id uuid [pk, not null]
+  tutor_id uuid [not null]
+  student_id uuid [not null]
+  title varchar(200) [not null]
+  exam_date timestamptz [not null]
+  score decimal(4,2) [not null, check: `score >= 0`]
+  max_score decimal(4,2) [not null, check: `max_score > 0`]
+  created_at timestamptz [not null, default: `now()`]
+
+  checks {
+    `score <= max_score` [name: 'chk_exams_score_range']
+  }
+}
+
+// ------------------------------------------
+// Finance and statistics
+// ------------------------------------------
+
+Table payments [note: 'At most one payment per lesson. The composite FK keeps the student consistent with the lesson.'] {
+  id uuid [pk, not null]
+  lesson_id uuid [not null, unique]
+  student_id uuid [not null]
+  amount decimal(10,2) [not null, check: `amount > 0`]
+  payment_date timestamptz [not null, default: `now()`]
+  status varchar(10) [not null, default: 'PENDING', check: `status in ('PENDING','PAID')`]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table statistics [
+  note: 'Prepared monthly numbers for the tutor dashboard. total_expenses was removed because no expense source exists. Recalculate these values on a schedule or in a view.'
+] {
+  id uuid [pk, not null]
+  tutor_id uuid [not null]
+  month_year date [not null, check: `month_year = date_trunc('month', month_year)::date`]
+  total_lessons int [not null, default: 0, check: `total_lessons >= 0`]
+  paid_lessons int [not null, default: 0, check: `paid_lessons >= 0`]
+  unpaid_lessons int [not null, default: 0, check: `unpaid_lessons >= 0`]
+  available_slots int [not null, default: 0, check: `available_slots >= 0`]
+  occupied_slots int [not null, default: 0, check: `occupied_slots >= 0`]
+  total_income decimal(10,2) [not null, default: 0, check: `total_income >= 0`]
+  average_grade decimal(4,2) [not null, default: 0, check: `average_grade >= 0 and average_grade <= 10`]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (tutor_id, month_year) [unique, name: 'uq_statistics_tutor_month']
+  }
+}
+
+// ------------------------------------------
+// Communication
+// ------------------------------------------
+
+Table reports [note: 'A parent receives at most one report for a lesson.'] {
+  id uuid [pk, not null]
+  lesson_id uuid [not null]
+  student_id uuid [not null]
+  parent_id uuid [not null]
+  report_text text [not null]
+  sent_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (lesson_id, parent_id) [unique, name: 'uq_reports_lesson_parent']
+  }
+}
+
+Table messages [note: 'Internal chat between two different users.'] {
+  id uuid [pk, not null]
+  sender_id uuid [not null]
+  receiver_id uuid [not null]
+  message_text text [not null]
+  created_at timestamptz [not null, default: `now()`]
+  is_read boolean [not null, default: false]
+
+  checks {
+    `sender_id <> receiver_id` [name: 'chk_messages_no_self_chat']
+  }
+}
+
+// ------------------------------------------
+// Gamification
+// ------------------------------------------
+
+Table student_points [note: 'One point total per student. Split out of rewards so badges cannot duplicate points.'] {
+  student_id uuid [pk, not null]
+  points int [not null, default: 0, check: `points >= 0`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table badges [note: 'Badge catalog maintained by the product or the tutor.'] {
+  id uuid [pk, not null]
+  code varchar(50) [not null, unique]
+  name varchar(100) [not null]
+  description text
+  points int [not null, default: 0, check: `points >= 0`]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table student_badges [note: 'Award history. One award of a given badge per student.'] {
+  id uuid [pk, not null]
+  student_id uuid [not null]
+  badge_id uuid [not null]
+  awarded_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (student_id, badge_id) [unique, name: 'uq_student_badges_student_badge']
+  }
+}
+
+// ------------------------------------------
+// Roadmap tables, not used in the MVP
+// ------------------------------------------
+
+Table invoices [note: 'Future: PDF invoices for parents.'] {
+  id uuid [pk, not null]
+  parent_id uuid [not null]
+  student_id uuid [not null]
+  amount decimal(10,2) [not null, check: `amount > 0`]
+  issue_date date [not null]
+  due_date date [not null]
+  pdf_url varchar(500)
+  status varchar(10) [not null, default: 'DRAFT', check: `status in ('DRAFT','SENT','PAID','OVERDUE')`]
+  created_at timestamptz [not null, default: `now()`]
+
+  checks {
+    `due_date >= issue_date` [name: 'chk_invoices_due_after_issue']
+  }
+}
+
+Table goals [note: 'Future: academic goals for a student.'] {
+  id uuid [pk, not null]
+  student_id uuid [not null]
+  title varchar(200) [not null]
+  description text
+  target_date date
+  status varchar(12) [not null, default: 'IN_PROGRESS', check: `status in ('IN_PROGRESS','ACHIEVED','FAILED')`]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table notifications [note: 'Future: push and email history. The invalid relation to type was removed.'] {
+  id uuid [pk, not null]
+  user_id uuid [not null]
+  title varchar(200) [not null]
+  body text [not null]
+  type varchar(5) [not null, check: `type in ('PUSH','EMAIL')`]
+  is_read boolean [not null, default: false]
+  sent_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, is_read, sent_at) [name: 'idx_notifications_user_unread']
+  }
+}
+
+// ------------------------------------------
+// Relationships and foreign key actions
+// ------------------------------------------
+
+// Identity. For one-to-one refs, the second column is the foreign key.
+Ref: users.id - tutors.user_id [delete: cascade, update: no action]
+Ref: users.id - parents.user_id [delete: cascade, update: no action]
+Ref: users.id - students.user_id [delete: cascade, update: no action]
+Ref: students.tutor_id >? tutors.id [delete: restrict, update: no action]
+Ref: students.parent_id >? parents.id [delete: restrict, update: no action]
+
+// Invitations
+Ref: tutor_invitations.tutor_id > tutors.id [delete: cascade, update: no action]
+Ref: tutor_invitations.accepted_by_student_id >? students.id [delete: set null, update: no action]
+Ref: parent_invitations.parent_id > parents.id [delete: cascade, update: no action]
+Ref: parent_invitations.accepted_by_student_id >? students.id [delete: set null, update: no action]
+
+// Lessons and files
+Ref: documents.owner_id > tutors.id [delete: cascade, update: no action]
+Ref: lessons.tutor_id > tutors.id [delete: restrict, update: no action]
+Ref: lessons.student_id >? students.id [delete: restrict, update: no action]
+Ref: lesson_materials.lesson_id > lessons.id [delete: cascade, update: no action]
+Ref: lesson_materials.document_id > documents.id [delete: cascade, update: no action]
+
+// Student indicators
+Ref: attendance.(lesson_id, student_id) > lessons.(id, student_id) [delete: cascade, update: no action]
+Ref: assignments.(lesson_id, student_id) > lessons.(id, student_id) [delete: cascade, update: no action]
+Ref: assignments.id - grades.assignment_id [delete: cascade, update: no action]
+Ref: exams.tutor_id > tutors.id [delete: restrict, update: no action]
+Ref: exams.student_id > students.id [delete: restrict, update: no action]
+
+// Finance
+Ref: payments.(lesson_id, student_id) > lessons.(id, student_id) [delete: restrict, update: no action]
+Ref: statistics.tutor_id > tutors.id [delete: cascade, update: no action]
+
+// Communication
+Ref: reports.(lesson_id, student_id) > lessons.(id, student_id) [delete: cascade, update: no action]
+Ref: reports.(student_id, parent_id) > students.(id, parent_id) [delete: restrict, update: no action]
+Ref: reports.parent_id > parents.id [delete: restrict, update: no action]
+Ref: messages.sender_id > users.id [delete: restrict, update: no action]
+Ref: messages.receiver_id > users.id [delete: restrict, update: no action]
+
+// Gamification
+Ref: students.id - student_points.student_id [delete: cascade, update: no action]
+Ref: student_badges.student_id > students.id [delete: cascade, update: no action]
+Ref: student_badges.badge_id > badges.id [delete: restrict, update: no action]
+
+// Roadmap
+Ref: invoices.parent_id > parents.id [delete: restrict, update: no action]
+Ref: invoices.(student_id, parent_id) > students.(id, parent_id) [delete: restrict, update: no action]
+Ref: goals.student_id > students.id [delete: cascade, update: no action]
+Ref: notifications.user_id > users.id [delete: cascade, update: no action]
