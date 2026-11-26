@@ -113,4 +113,8 @@ google-services.json
 infra/data/
 infra/volumes/
 
-
+# ==========================================
+# Zone Identifier
+# ==========================================
+*:Zone.Identifier
+*Zone.Identifier*
