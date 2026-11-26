@@ -20,11 +20,11 @@ Cognia is a tutoring management platform with **three user roles**:
 
 | Role | Platform | Description |
 |------|----------|-------------|
-| `TUTOR`   | Web (React)    | Private teacher. The only role that can register on the web. |
-| `STUDENT` | Mobile (Android) | Pupil. Account is created by the tutor. |
-| `PARENT`  | Mobile (Android) | Parent or guardian. Account is created by the tutor. |
+| `TUTOR`   | Web (React)    | Private teacher. Self-registers on the web. |
+| `STUDENT` | Mobile (Android) | Pupil. Self-registers in the Android app. |
+| `PARENT`  | Mobile (Android) | Parent or guardian. Self-registers in the Android app. |
 
-The **web application is tutor-only**. Students and parents use a single Android app where the backend determines the role from the account, not the user.
+The **web application is tutor-only**. Students and parents use a single Android app where the backend determines the role from the account, not the user. All three roles create their own accounts. Tutors do not create `STUDENT` or `PARENT` accounts. The exact mechanism that links a student to a tutor and to a parent (invitation code, email link, etc.) is still to be defined before the API is implemented.
 
 ---
 

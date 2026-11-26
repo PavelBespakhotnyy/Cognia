@@ -195,8 +195,8 @@ Para garantizar la privacidad de los datos (especialmente los de menores de edad
 
 \begin{itemize}
     \item \textbf{Roles del sistema:} La plataforma define tres roles principales: \texttt{TUTOR}, \texttt{STUDENT} y \texttt{PARENT}.
-    \item \textbf{El profesor como administrador:} El profesor particular es el único usuario con privilegios para registrar nuevos alumnos y vincularlos a sus respectivos padres. No existe el registro público.
-    \item \textbf{Sin registro libre en la App Móvil:} Las aplicaciones Android (para alumnos y padres) no dispondrán de un formulario de registro. El profesor será quien cree las cuentas y entregue las credenciales de acceso.
+    \item \textbf{Registro propio de los tres roles:} Cada usuario crea su propia cuenta según su rol: el profesor en la aplicación web, el alumno y el padre en la aplicación Android. El profesor no crea cuentas de alumnos ni de padres, y ningún rol puede crear cuentas de otro rol.
+    \item \textbf{Vinculación pendiente:} Las relaciones entre alumno y profesor, y entre alumno y padre, se definirán antes de implementar la API (código de invitación, enlace por correo u otro).
     \item \textbf{Redirección automática basada en el Backend:} Tras el inicio de sesión, el backend (Spring Boot) validará el token JWT y determinará el rol del usuario. El sistema lo redirigirá automáticamente a su interfaz correspondiente (Web para el profesor, Android para el alumno o el padre), imposibilitando el acceso cruzado a datos que no le corresponden.
 \end{itemize}
 
@@ -206,7 +206,7 @@ Los requisitos funcionales describen las acciones que el sistema debe permitir. 
 
 \subsection{Módulo Web (Profesor particular)}
 \begin{itemize}
-    \item \textbf{RF-01 (Must have):} Autenticación segura mediante token JWT.
+    \item \textbf{RF-01 (Must have):} Registro propio del profesor en la aplicación web y autenticación segura mediante token JWT.
     \item \textbf{RF-02 (Must have):} Gestión CRUD (Crear, Leer, Actualizar, Borrar) de las fichas de los alumnos y sus datos de contacto.
     \item \textbf{RF-03 (Must have):} Calendario interactivo para agendar clases, con posibilidad de cancelar o reprogramar.
     \item \textbf{RF-04 (Must have):} Registro y control del estado financiero de cada clase (Pagado / Pendiente / Deuda).
@@ -223,6 +223,8 @@ Los requisitos funcionales describen las acciones que el sistema debe permitir. 
     \item \textbf{RF-11 (Should have - Padre):} Consulta del historial de clases impartidas a su hijo y acceso a los informes del profesor.
     \item \textbf{RF-12 (Could have - Padre):} Recepción de notificaciones push sobre la publicación de nuevas notas o avisos de pago.
     \item \textbf{RF-13 (Could have - Alumno):} Sistema de gamificación (acumulación de puntos por tareas entregadas a tiempo).
+    \item \textbf{RF-14 (Must have - Padre):} Registro propio del padre o tutor legal en la aplicación Android, sin intervención del profesor.
+    \item \textbf{RF-15 (Must have - Alumno):} Registro propio del alumno en la aplicación Android, sin intervención del profesor.
 \end{itemize}
 
 \section{Requisitos No Funcionales}
