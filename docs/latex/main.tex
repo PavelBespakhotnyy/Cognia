@@ -446,4 +446,110 @@ Al finalizar esta fase, el repositorio contiene:
 
 Todos los cambios han sido versionados en la rama \texttt{main} mediante commits atómicos y descriptivos. El repositorio está preparado para que el siguiente \textit{sprint} se centre en el diseño en Figma de la interfaz (UI Kit y pantallas de autenticación) y en la implementación de las primeras pantallas del frontend.
 
+\chapter{Desarrollo e implementación del Frontend}
+
+\section{Introducción}
+
+Una vez finalizada la configuración técnica del repositorio y del entorno de desarrollo (descrita en el capítulo anterior), el siguiente paso consistió en construir la interfaz de usuario de la aplicación web. Este capítulo documenta el proceso de transformación de los diseños de Figma en componentes funcionales de React, la organización del código para garantizar su escalabilidad y la implementación de la lógica de navegación entre las distintas pantallas de la plataforma.
+
+El objetivo de esta fase es doble: por un lado, proporcionar una experiencia de usuario (UX) clara y profesional para el rol del profesor particular (\texttt{TUTOR}), y por otro, establecer una arquitectura de componentes reutilizables que facilite el futuro desarrollo del panel de control (Dashboard) y la integración con la API REST de Spring Boot.
+
+\section{Arquitectura de enrutamiento y organización de páginas}
+
+\subsection{Transición de un prototipo monolítico a una SPA}
+
+En las primeras fases de prototipado, la totalidad de las vistas se gestionaba desde un único archivo \path{App.tsx} mediante el uso del hook \texttt{useState}. Aunque este enfoque es rápido para validar ideas, resulta inviable para un proyecto real, ya que provoca un archivo excesivamente largo y dificulta el mantenimiento.
+
+Para resolver esta limitación, se ha implementado el enrutamiento del lado del cliente (\textit{Client-Side Routing}) utilizando la biblioteca \textbf{React Router}. Esto convierte a Cognia en una Aplicación de Página Única (\textit{Single Page Application}, SPA), donde las transiciones entre pantallas son instantáneas, sin recargar el navegador.
+
+\subsection{Estructura de directorios escalable}
+
+Para mantener el código limpio y predecible, se ha adoptado la siguiente estructura de carpetas dentro de \path{src/}:
+
+\begin{itemize}
+    \item \path{components/}: Contiene componentes globales y reutilizables que se repiten en varias páginas, como \texttt{Header.tsx} y \texttt{Footer.tsx}.
+    \item \path{pages/}: Contiene los archivos que representan una pantalla completa de la aplicación. Cada archivo es responsable de ensamblar los componentes y gestionar su propia lógica local.
+    \item \path{assets/}: Almacena los recursos estáticos (imágenes, logotipos, fotografías) exportados desde Figma.
+    \item \path{stories/}: Reservado exclusivamente para las historias de Storybook.
+\end{itemize}
+
+Esta separación de responsabilidades (\textit{Separation of Concerns}) permite que, al añadir nuevas funcionalidades (como el calendario o la gestión de alumnos), el código no se mezcle y sea fácil localizar dónde realizar cambios.
+
+\subsection{Implementación de las rutas}
+
+El archivo principal \path{App.tsx} se ha refactorizado para actuar únicamente como un despachador de rutas. Utilizando los componentes \texttt{BrowserRouter} y \texttt{Routes}, se han definido las siguientes vistas:
+
+\begin{itemize}
+    \item \texttt{/} (o raíz): Muestra la página de inicio (\texttt{LandingPage}).
+    \item \texttt{/login}: Muestra el formulario de inicio de sesión (\texttt{LoginPage}).
+    \item \texttt{/register}: Muestra el formulario de registro con selección de roles (\texttt{RegisterPage}).
+    \item \texttt{/forgot-password}: Muestra la pantalla de recuperación de contraseña (\texttt{ForgotPasswordPage}).
+    \item \texttt{/email-verification}: Muestra la pantalla de confirmación tras el registro (\texttt{EmailVerificationPage}).
+    \item \texttt{/about}: Muestra la información institucional del proyecto (\texttt{AboutPage}).
+    \item \texttt{/dashboard}: Página de inicio de sesión exitosa (actualmente un marcador de posición para futuras iteraciones).
+\end{itemize}
+
+\section{Diseño de la interfaz y gestión de estilos}
+
+\subsection{Actualización de la paleta de colores}
+
+Durante la fase de diseño en Figma, se definió una paleta de colores corporativa que difiere de los colores por defecto generados por Vite. Para reflejar esta identidad visual, se actualizó el archivo \path{index.css} definiendo variables CSS (Custom Properties) en el selector \texttt{:root}. Los nuevos colores son:
+
+\begin{itemize}
+    \item \textbf{Fondo (Background):} \texttt{\#f6f8f7} (un tono gris muy claro, relajante para la vista).
+    \item \textbf{Primario (Primary):} \texttt{\#28d745} (verde brillante, utilizado para llamadas a la acción).
+    \item \textbf{Secundario (Secondary):} \texttt{\#789dfc} (azul suave, para textos destacados o botones secundarios).
+    \item \textbf{Acento (Accent):} \texttt{\#b966e5} (violeta, reservado para etiquetas o detalles decorativos).
+    \item \textbf{Texto (Text):} \texttt{\#000000} (negro puro para máxima legibilidad).
+\end{itemize}
+
+El uso de variables CSS (\texttt{var(--color-primary)}) permite que, si en el futuro se decide cambiar el verde por un azul, solo sea necesario modificar una línea en el archivo \path{index.css} para que toda la aplicación se actualice automáticamente.
+
+\subsection{Separación de estilos: App.css vs estilos locales}
+
+Para evitar conflictos de CSS, se ha aplicado una estrategia de separación:
+
+\begin{itemize}
+    \item \path{App.css}: Contiene únicamente estilos globales y compartidos por todas las páginas. Esto incluye la estructura de la cabecera, el pie de página, los botones base (\texttt{.cta-button}), los formularios (\texttt{.form-group}) y las tarjetas de contenido (\texttt{.sub-view-card}).
+    \item \path{LandingPage.css}: Se creó un archivo de estilos específico para la página de inicio. Aquí se alojan los estilos de la sección principal (\textit{Hero}), como la cuadrícula de dos columnas, los títulos grandes, la imagen central y los efectos de animación del logotipo.
+\end{itemize}
+
+Esta organización garantiza que, si se modifica el tamaño del título en la página de inicio, esto no afecte a los títulos de la página de registro o del panel de control.
+
+\section{Implementación de las pantallas principales}
+
+\subsection{Página de inicio (Landing Page)}
+
+La página de inicio es la carta de presentación del producto. Se diseñó con un enfoque \textit{responsive} (adaptable a móviles) y está compuesta por:
+
+\begin{itemize}
+    \item Un encabezado de navegación (\texttt{Header}) con el logotipo y botones para iniciar sesión o registrarse.
+    \item Una sección central (\textit{Hero}) con el eslogan del proyecto: \textit{«Structure your lessons. See the progress.»}, donde la segunda frase se resalta utilizando el color secundario definido en la paleta.
+    \item Una tarjeta de imagen con un efecto de sombra y esquinas redondeadas, que contiene la fotografía de un profesor o entorno educativo.
+    \item Un pie de página (\texttt{Footer}) con los derechos de autor.
+\end{itemize}
+
+\subsection{Pantallas de autenticación y gestión de usuarios}
+
+Se han desarrollado las siguientes vistas, todas ellas construidas sobre un componente de tarjeta (\texttt{sub-view-card}) que garantiza una apariencia consistente:
+
+\begin{enumerate}
+    \item \textbf{Registro (\texttt{RegisterPage}):} Un formulario dinámico que permite al usuario seleccionar su rol (Profesor, Alumno o Padre). Dependiendo de la selección, el formulario muestra u oculta campos específicos (por ejemplo, el teléfono para el profesor o el método de pago para el padre), tal como se definió en el contrato de la API.
+    \item \textbf{Inicio de sesión (\texttt{LoginPage}):} Un formulario clásico de correo electrónico y contraseña, con un enlace para recuperar la contraseña en caso de olvido.
+    \item \textbf{Recuperación de contraseña (\texttt{ForgotPasswordPage}):} Una vista que permite solicitar un enlace de restablecimiento. Al enviar el formulario, se muestra un mensaje de confirmación en la misma pantalla.
+    \item \textbf{Verificación de correo (\texttt{EmailVerificationPage}):} Una pantalla informativa que se muestra tras un registro exitoso, indicando al usuario que revise su bandeja de entrada para activar su cuenta.
+\end{enumerate}
+
+\section{Resultados y siguientes pasos}
+
+Al concluir esta fase de desarrollo del frontend, se han conseguido los siguientes hitos:
+
+\begin{itemize}
+    \item La interfaz web es completamente navegable gracias a React Router.
+    \item El código está modularizado, lo que facilita la incorporación de nuevos desarrolladores (o la continuación del trabajo por parte de los mismos autores).
+    \item Se ha implementado una identidad visual coherente con los diseños de Figma.
+    \item Las pantallas de inicio de sesión y registro están listas para ser conectadas a la API de Spring Boot en el próximo \textit{sprint}.
+\end{itemize}
+
+El siguiente paso lógico es la creación de componentes de interfaz de usuario (UI Kit) reutilizables (botones, entradas de texto, tarjetas) en Storybook, vinculándolos a los diseños de Figma, y comenzar a construir el panel de control (\textit{Dashboard}) para el profesor, donde se gestionarán las clases y los alumnos.
 \end{document}
